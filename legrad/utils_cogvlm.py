@@ -7,6 +7,7 @@ import warnings
 import torch
 from torch import Tensor
 from torch.nn import functional as F
+import xops
 
 import open_clip
 from open_clip import OPENAI_DATASET_MEAN, OPENAI_DATASET_STD
@@ -57,7 +58,15 @@ def hooked_attention_forward(self, x: "tensor(B, L, D)") -> "tensor(B, L, D)":
     out, attn_weights = memory_efficient_attention(
         q, k, v, scale=self.scale,
     )
+    out_xops, attn_weights_xops = xops.memory_efficient_attention(
+        q, k, v, scale=self.scale,
+    )
     print(f"testing if local version works", attn_weights.shape)
+    print(f"testing if xops version works", attn_weights_xops.shape)
+    print(f"Are the two versions equal?", torch.allclose(attn_weights, attn_weights_xops))
+    #print shapes of out and attn_weights
+    print(f"out shape: {out.shape}")
+    print(f"out_xops shape: {out_xops.shape}")
     output = self.dense(out.view(B, L, -1))
     output = self.output_dropout(output)
 
