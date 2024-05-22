@@ -7,7 +7,7 @@ import warnings
 import torch
 from torch import Tensor
 from torch.nn import functional as F
-import xops
+import xformers.ops as xops
 
 import open_clip
 from open_clip import OPENAI_DATASET_MEAN, OPENAI_DATASET_STD
