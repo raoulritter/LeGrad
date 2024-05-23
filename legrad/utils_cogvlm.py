@@ -65,7 +65,7 @@ def hooked_attention_forward(self, x: "tensor(B, L, D)") -> "tensor(B, L, D)":
     #print shapes of out and attn_weights
     print(f"out shape: {out.shape}")
     print(f"out_xops shape: {out_xops.shape}")
-    output = self.dense(out.view(B, L, -1))
+    output = self.dense(out.reshape(B, L, -1))
     output = self.output_dropout(output)
 
     # Save the attention weights
