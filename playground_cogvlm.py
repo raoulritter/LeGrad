@@ -167,7 +167,7 @@ image = Image.open(requests.get('http://images.cocodataset.org/val2014/COCO_val2
 
 # image_tensor = preprocess_pipeline(image).unsqueeze(0).to(DEVICE)
 # text_emb, processed_image = _get_text_embedding(model, tokenizer, "a photo of a cat", DEVICE, None)
-text_emb, processed_image = _get_text_embedding(model, tokenizer, "a photo of a cat", DEVICE, image)
+text_emb, processed_image = _get_text_embedding(model, tokenizer, "a photo of a cat and a dog and other things", DEVICE, image)
 
 
 processed_image = processed_image.unsqueeze(0)
