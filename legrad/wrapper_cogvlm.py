@@ -118,7 +118,20 @@ class LeWrapper(nn.Module):
             intermediate_feat = self.model.vision.transformer.layers[layer].feat_post_mlp
             print("intermediate_feat.shape: ", intermediate_feat.shape)
             
-            # intermediate_feat = self.visual.ln_post(intermediate_feat.mean(dim=0)) @ self.visual.proj # FIND CORRECT PROJECTION
+            intermediate_feat = self.model.vision.linear_proj(intermediate_feat.mean(dim=0)) 
+            print("intermediate_feat.shape after linear proj: ", intermediate_feat.shape)
+            
+            # print("model: ", self.model)
+            # intermediate_feat = self.model.cross_vision(intermediate_feat)
+            # print("intermediate_feat.shape after cross vision: ", intermediate_feat.shape)
+
+            sys.exit("done")
+            
+            #intermediate_feat = self.visual.ln_post(intermediate_feat.mean(dim=0)) @ self.visual.proj 
+
+            
+            
+            # FIND CORRECT PROJECTION
             
             # intermediate_feat = F.normalize(intermediate_feat, dim=-1)
             # image_features_list.append(intermediate_feat)

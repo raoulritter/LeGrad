@@ -2,6 +2,7 @@ import requests
 from PIL import Image
 import torch
 import timm
+import sys
 import inspect
 from transformers import AutoModelForCausalLM, LlamaTokenizer
 from torchvision.transforms import Resize, Compose, ToTensor, Normalize
@@ -64,8 +65,12 @@ from legrad import LeWrapper, LePreprocess, visualize
 
 def _get_text_embedding(model, tokenizer, query, device, image):
     # Prepare inputs using the custom build_conversation_input_ids method
-    inputs = model.build_conversation_input_ids(tokenizer, query=query, history=[], images=[image])  # chat mode
     
+    if image is None: 
+        inputs = model.build_conversation_input_ids(tokenizer, query=query, history=[], template_version='base') # chat mode
+    else: 
+        inputs = model.build_conversation_input_ids(tokenizer, query=query, history=[], images=[image])  
+            
     # try:
     #     source_code = inspect.getsource(model.build_conversation_input_ids)
     #     print("Source Code:\n", source_code)
@@ -78,22 +83,29 @@ def _get_text_embedding(model, tokenizer, query, device, image):
         'input_ids': inputs['input_ids'].unsqueeze(0).to(device),
         'token_type_ids': inputs['token_type_ids'].unsqueeze(0).to(device),
         'attention_mask': inputs['attention_mask'].unsqueeze(0).to(device),
-        'images': [[inputs['images'][0].to(device).to(torch.bfloat16)]],
+        'images': [[inputs['images'][0].to(device).to(torch.bfloat16)]] if image is not None else None,
     }
     
     
         
-    if inputs['images'] is None or not inputs['images'][0]:
-        raise ValueError("The image input is not properly initialized or is None")
+    # if inputs['images'] is None or not inputs['images'][0]:
+    #     raise ValueError("The image input is not properly initialized or is None")
 
 
     gen_kwargs = {"max_length": 2048, "do_sample": False}
 
     with torch.no_grad():
         text_embedding = model.generate(**inputs, **gen_kwargs)
+        
+        print("model generate code: ")
+        print(inspect.getsource(model.generate))
+        
         print("text_embedding shape: ",text_embedding.shape)
         
-        # outputs = outputs[:, inputs['input_ids'].shape[1]:]
+        text_embedding = text_embedding[:, inputs['input_ids'].shape[1]:]
+        
+        print("text_embedding shape: ",text_embedding.shape)
+        sys.exit()
         
         # print("outputs shape: ", outputs.shape)
         # text_embeddings = tokenizer.decode(outputs[0])
@@ -141,6 +153,9 @@ model = AutoModelForCausalLM.from_pretrained(
     trust_remote_code=True
 ).to(DEVICE).eval()
 
+print("entire model forward: ")
+print(inspect.getsource(model.forward))
+
 tokenizer = LlamaTokenizer.from_pretrained("lmsys/vicuna-7b-v1.5")
 
 # PROCESS IMAGE
@@ -149,7 +164,10 @@ image = Image.open(requests.get('http://images.cocodataset.org/val2014/COCO_val2
 # image = Image.open(image_url)
 
 # image_tensor = preprocess_pipeline(image).unsqueeze(0).to(DEVICE)
+# text_emb, processed_image = _get_text_embedding(model, tokenizer, "a photo of a cat", DEVICE, None)
 text_emb, processed_image = _get_text_embedding(model, tokenizer, "a photo of a cat", DEVICE, image)
+
+
 processed_image = processed_image.unsqueeze(0)
 
 print("obtained output embedding")
@@ -162,7 +180,7 @@ model = LeWrapper(model)
 explainability_map = model.compute_legrad_cogvlm(image=processed_image, text_embedding=text_emb)
 
 
-# data_config = timm.data.resolve_model_data_config(model)
+# # data_config = timm.data.resolve_model_data_config(model)
 
 
 
