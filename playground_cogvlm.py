@@ -95,7 +95,8 @@ def _get_text_embedding(model, tokenizer, query, device, image):
 
     with torch.no_grad():
         text_embedding = model.generate(**inputs, **gen_kwargs)
-        
+
+        breakpoint()
         print("model generate code: ")
         # print(inspect.getsource(model.generate))
 
@@ -105,12 +106,11 @@ def _get_text_embedding(model, tokenizer, query, device, image):
 
         text_embedding = text_embedding[:, inputs['input_ids'].shape[1]:]
 
-        print("text_embedding shape: ",text_embedding.shape)
+        # print("text_embedding shape: ",text_embedding.shape)
 
         output = tokenizer.decode(text_embedding[0])
         print("text embeddings: ", output)
 
-        breakpoint()
 
 
 
