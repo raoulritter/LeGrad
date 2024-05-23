@@ -113,7 +113,7 @@ class LeWrapper(nn.Module):
         image_features_list = []
     
         # Collect images features (activations) for specified layers/blocks and postprocess them
-        for layer in range(self.starting_depth, len(self.vision.transformer.layers)):
+        for layer in range(self.starting_depth, len(self.model.vision.transformer.layers)):
             
             intermediate_feat = self.model.vision.transformer.layers[layer].feat_post_mlp
             print("intermediate_feat.shape: ", intermediate_feat.shape)
