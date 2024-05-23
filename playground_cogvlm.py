@@ -98,13 +98,13 @@ def _get_text_embedding(model, tokenizer, query, device, image):
         
         print("model generate code: ")
         print(inspect.getsource(model.generate))
+
+        print(inspect.getsource(model.build_conversation_input_ids))
         
         print("text_embedding shape: ",text_embedding.shape)
 
-        # breakpoint()
-        
         text_embedding = text_embedding[:, inputs['input_ids'].shape[1]:]
-        
+
         print("text_embedding shape: ",text_embedding.shape)
 
         output = tokenizer.decode(text_embedding[0])
@@ -116,7 +116,7 @@ def _get_text_embedding(model, tokenizer, query, device, image):
 
     # print("inputs images len:", len(inputs['images']))
     # print("inputs images shape: ", inputs['images'][0][0].shape)
-    
+
     processed_image = inputs['images'][0][0]
     return text_embedding, processed_image
 
@@ -130,7 +130,7 @@ def apply_transforms(image):
     normalize_transform = Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     
     transform = Compose([
-    resize_transform,   
+    resize_transform,
     to_tensor_transform,
     normalize_transform
     ])
