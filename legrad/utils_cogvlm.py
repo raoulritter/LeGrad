@@ -100,7 +100,7 @@ def hooked_resblock_forward(self, hidden_states):
         attention_output = self.input_layernorm(self.attention(attention_input))
         
         hidden_states = attention_input + attention_output
-        self.feat_post_attn = hidden.states # ADDED, IMPORTANT
+        self.feat_post_attn = hidden_states.states # ADDED, IMPORTANT
         
         mlp_input = hidden_states
         mlp_output = self.post_attention_layernorm(self.mlp(mlp_input))
