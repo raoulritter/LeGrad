@@ -162,8 +162,7 @@ tokenizer = LlamaTokenizer.from_pretrained("lmsys/vicuna-7b-v1.5")
 
 # PROCESS IMAGE
 # image_path = '/home/jwiers/POPE/data/val2014/COCO_val2014_000000000042.jpg'
-# image = Image.open(requests.get('http://images.cocodataset.org/val2014/COCO_val2014_000000000042.jpg', stream=True).raw).convert('RGB')
-image = None
+image = Image.open(requests.get('http://images.cocodataset.org/val2014/COCO_val2014_000000000042.jpg', stream=True).raw).convert('RGB')
 # image = Image.open(image_url)
 
 # image_tensor = preprocess_pipeline(image).unsqueeze(0).to(DEVICE)
