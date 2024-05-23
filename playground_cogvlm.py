@@ -97,9 +97,9 @@ def _get_text_embedding(model, tokenizer, query, device, image):
         text_embedding = model.generate(**inputs, **gen_kwargs)
         
         print("model generate code: ")
-        print(inspect.getsource(model.generate))
+        # print(inspect.getsource(model.generate))
 
-        print(inspect.getsource(model.build_conversation_input_ids))
+        # print(inspect.getsource(model.build_conversation_input_ids))
 
         print("text_embedding shape: ",text_embedding.shape)
 
@@ -156,7 +156,7 @@ model = AutoModelForCausalLM.from_pretrained(
 ).to(DEVICE).eval()
 
 print("entire model forward: ")
-print(inspect.getsource(model.forward))
+# print(inspect.getsource(model.forward))
 
 tokenizer = LlamaTokenizer.from_pretrained("lmsys/vicuna-7b-v1.5")
 
