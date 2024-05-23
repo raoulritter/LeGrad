@@ -1,7 +1,6 @@
 import requests
 from PIL import Image
 import torch
-import timm
 import sys
 import inspect
 from transformers import AutoModelForCausalLM, LlamaTokenizer
