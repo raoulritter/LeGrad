@@ -101,7 +101,7 @@ def _get_text_embedding(model, tokenizer, query, device, image):
 
         # print(inspect.getsource(model.build_conversation_input_ids))
 
-        print("text_embedding shape: ",text_embedding.shape)
+        print("text_embedding: ",text_embedding)
 
         text_embedding = text_embedding[:, inputs['input_ids'].shape[1]:]
 
