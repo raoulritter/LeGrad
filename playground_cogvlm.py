@@ -67,7 +67,6 @@ def _get_text_embedding(model, tokenizer, query, device, image):
     
     if image is None:
         inputs = model.build_conversation_input_ids(tokenizer, query=query, history=[], template_version='base') # chat mode
-        breakpoint()
     else: 
         inputs = model.build_conversation_input_ids(tokenizer, query=query, history=[], images=[image])  
             
