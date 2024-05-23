@@ -682,6 +682,10 @@ def memory_efficient_attention(
     # Transpose back to the original format
     output = output.transpose(1, 2)  # (B, M, H, K)
 
+    #remove the first B
+    output = output[0]
+
+
     if output_dtype is not None:
         output = output.to(output_dtype)
 
