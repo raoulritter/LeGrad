@@ -101,6 +101,8 @@ def _get_text_embedding(model, tokenizer, query, device, image):
         print(inspect.getsource(model.generate))
         
         print("text_embedding shape: ",text_embedding.shape)
+
+        breakpoint()
         
         text_embedding = text_embedding[:, inputs['input_ids'].shape[1]:]
         
