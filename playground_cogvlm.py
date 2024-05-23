@@ -65,8 +65,9 @@ from legrad import LeWrapper, LePreprocess, visualize
 def _get_text_embedding(model, tokenizer, query, device, image):
     # Prepare inputs using the custom build_conversation_input_ids method
     
-    if image is None: 
+    if image is None:
         inputs = model.build_conversation_input_ids(tokenizer, query=query, history=[], template_version='base') # chat mode
+        breakpoint()
     else: 
         inputs = model.build_conversation_input_ids(tokenizer, query=query, history=[], images=[image])  
             
