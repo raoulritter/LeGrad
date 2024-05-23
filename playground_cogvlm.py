@@ -150,7 +150,6 @@ model = AutoModelForCausalLM.from_pretrained(
     MODEL_PATH,
     torch_dtype=torch_type,
     low_cpu_mem_usage=True,
-    load_in_4bit=None,
     trust_remote_code=True
 ).to(DEVICE).eval()
 
