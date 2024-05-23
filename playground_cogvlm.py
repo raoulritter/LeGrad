@@ -101,16 +101,18 @@ def _get_text_embedding(model, tokenizer, query, device, image):
         
         print("text_embedding shape: ",text_embedding.shape)
 
-        breakpoint()
+        # breakpoint()
         
         text_embedding = text_embedding[:, inputs['input_ids'].shape[1]:]
         
         print("text_embedding shape: ",text_embedding.shape)
-        sys.exit()
-        
-        # print("outputs shape: ", outputs.shape)
-        # text_embeddings = tokenizer.decode(outputs[0])
-        # print("text embeddings: ", text_embeddings)
+
+        output = tokenizer.decode(text_embedding[0])
+        print("text embeddings: ", output)
+
+        breakpoint()
+
+
 
     # print("inputs images len:", len(inputs['images']))
     # print("inputs images shape: ", inputs['images'][0][0].shape)
