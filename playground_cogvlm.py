@@ -3,37 +3,39 @@ from PIL import Image
 import torch
 import sys
 import inspect
+import pdb
 from transformers import AutoModelForCausalLM, LlamaTokenizer
 from torchvision.transforms import Resize, Compose, ToTensor, Normalize
 from legrad import LeWrapper, LePreprocess, visualize
 
+
 # def _get_text_embedding(model, tokenizer, query, device, image):
-    
+
 #     # # Prepare inputs using the custom build_conversation_input_ids method
 #     # inputs = model.build_conversation_input_ids(tokenizer, query=query, history=[], images=[image])  # chat mode
-    
+
 #     history = []
-    
-    
+
+
 #     print("query: ", query)
 #     print("tokenizer: ", tokenizer)
 #     print("history: ", history)
 #     print("images: ", image)
-        
+
 #     input_by_model = model.build_conversation_input_ids(tokenizer, query=query, history=history, images=[image])
-    
+
 #     # if image is None:
 #     #     inputs = model.build_conversation_input_ids(tokenizer, query=query, history=history, template_version='base')
 #     # else:
 #     #     inputs = model.build_conversation_input_ids(tokenizer, query=query, history=history, images=[image])
-    
+
 #     inputs = {
 #             'input_ids': input_by_model['input_ids'].unsqueeze(0).to(DEVICE),
 #             'token_type_ids': input_by_model['token_type_ids'].unsqueeze(0).to(DEVICE),
 #             'attention_mask': input_by_model['attention_mask'].unsqueeze(0).to(DEVICE),
 #             'images': [[input_by_model['images'][0].to(DEVICE).to(torch_type)]] if image is not None else None,
 #         }
-        
+
 
 #     if 'cross_images' in inputs and inputs['cross_images']:
 #             inputs['cross_images'] = [[inputs['cross_images'][0].to(DEVICE).to(torch.bfloat16)]]
@@ -43,9 +45,8 @@ from legrad import LeWrapper, LePreprocess, visualize
 #     with torch.no_grad():
 #         outputs = model.generate(**inputs, **gen_kwargs)
 #         outputs = outputs[:, inputs['input_ids'].shape[1]:]
-        
-#     return outputs
 
+#     return outputs
 
 
 # Define the preprocessing steps
@@ -61,35 +62,31 @@ from legrad import LeWrapper, LePreprocess, visualize
 # preprocess_pipeline = create_cogvlm_preprocess()
 
 
-
 def _get_text_embedding(model, tokenizer, query, device, image):
     # Prepare inputs using the custom build_conversation_input_ids method
-    
+
     if image is None:
-        inputs = model.build_conversation_input_ids(tokenizer, query=query, history=[], template_version='base') # chat mode
-    else: 
-        inputs = model.build_conversation_input_ids(tokenizer, query=query, history=[], images=[image])  
-            
-    # try:
+        inputs = model.build_conversation_input_ids(tokenizer, query=query, history=[],
+                                                    template_version='base')  # chat mode
+    else:
+        inputs = model.build_conversation_input_ids(tokenizer, query=query, history=[], images=[image])
+
+        # try:
     #     source_code = inspect.getsource(model.build_conversation_input_ids)
     #     print("Source Code:\n", source_code)
     # except TypeError:
-        
+
     #     print("Couldn't retrieve source code. Function may be built-in or compiled.")
-    
-    
+
     inputs = {
         'input_ids': inputs['input_ids'].unsqueeze(0).to(device),
         'token_type_ids': inputs['token_type_ids'].unsqueeze(0).to(device),
         'attention_mask': inputs['attention_mask'].unsqueeze(0).to(device),
         'images': [[inputs['images'][0].to(device).to(torch.bfloat16)]] if image is not None else None,
     }
-    
-    
-        
+
     # if inputs['images'] is None or not inputs['images'][0]:
     #     raise ValueError("The image input is not properly initialized or is None")
-
 
     gen_kwargs = {"max_length": 2048, "do_sample": False}
 
@@ -105,17 +102,38 @@ def _get_text_embedding(model, tokenizer, query, device, image):
         # print("text_embedding: ",text_embedding)
 
         text_embedding = text_embedding[:, inputs['input_ids'].shape[1]:]
+        pdb.set_trace()
 
-        print("text_embedding shape: ",text_embedding)
+        print("text_embedding shape: ", text_embedding)
         # print("text_embedding shape: ",text_embedding.shape)
 
         output = tokenizer.decode(text_embedding[0])
 
+        print(model.model.embed_tokens)
+
+        # model.foward.lm_head
+
+        # output
+
+        # TODO CHECK AND FIND THE MATRIX FOR THE OUTPUT TOKEN
+
+        breakpoint()
+
+        dummy_input_lm_head = torch.randn(1, 2, 4096).to(DEVICE).to(torch.bfloat16)
+
+        model.lm_head(dummy_input_lm_head)  ## STEP INTO THE MODEL HERE
+
+        # dummy_tokens_dict = torch.randint(0, 32000, (1, 2)).to(DEVICE).to(torch.bfloat16)
+
+        # model.model.embed_tokens(dummy_tokens_dict) ## STEP AGAIN
+
+        print(type(model.lm_head))  # Check the type of lm_head
+        # print(type(model.embed_tokens))  # Check the type of embed_tokens
+
+        model.lm_head  # Step into this to inspect further if it's a method or class
+        model.model.embed_tokens  # Step into this to inspect further if it's a method or class
         breakpoint()
         print("text embeddings: ", output)
-
-
-
 
     # print("inputs images len:", len(inputs['images']))
     # print("inputs images shape: ", inputs['images'][0][0].shape)
@@ -123,25 +141,25 @@ def _get_text_embedding(model, tokenizer, query, device, image):
     processed_image = inputs['images'][0][0]
     return text_embedding, processed_image
 
-def apply_transforms(image): 
-    
+
+def apply_transforms(image):
     # Define the image size expected by the model
     image_size = 224  # This size should be confirmed from the model specifications
 
     resize_transform = Resize((image_size, image_size))
     to_tensor_transform = ToTensor()
     normalize_transform = Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    
+
     transform = Compose([
-    resize_transform,
-    to_tensor_transform,
-    normalize_transform
+        resize_transform,
+        to_tensor_transform,
+        normalize_transform
     ])
-    
+
     processed_image = transform(image)
 
     return processed_image
-    
+
 
 # ------- model's paramters -------
 MODEL_PATH = "THUDM/cogvlm-chat-hf"
@@ -165,13 +183,15 @@ tokenizer = LlamaTokenizer.from_pretrained("lmsys/vicuna-7b-v1.5")
 
 # PROCESS IMAGE
 # image_path = '/home/jwiers/POPE/data/val2014/COCO_val2014_000000000042.jpg'
-image = Image.open(requests.get('http://images.cocodataset.org/val2014/COCO_val2014_000000000042.jpg', stream=True).raw).convert('RGB')
+image = Image.open(
+    requests.get('http://images.cocodataset.org/val2014/COCO_val2014_000000000042.jpg', stream=True).raw).convert('RGB')
 # image = Image.open(image_url)
 
 # image_tensor = preprocess_pipeline(image).unsqueeze(0).to(DEVICE)
 # text_emb, processed_image = _get_text_embedding(model, tokenizer, "a photo of a cat", DEVICE, None)
 text_emb, processed_image = _get_text_embedding(model, tokenizer, "a photo of a cat", DEVICE, image)
 
+print(f"Text Embeddings: {text_emb}")
 
 processed_image = processed_image.unsqueeze(0)
 
@@ -184,10 +204,7 @@ model = LeWrapper(model)
 
 explainability_map = model.compute_legrad_cogvlm(image=processed_image, text_embedding=text_emb)
 
-
 # # data_config = timm.data.resolve_model_data_config(model)
-
-
 
 
 # # processed_image = apply_transforms(image)
