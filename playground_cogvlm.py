@@ -1,6 +1,7 @@
 import requests
 from PIL import Image
 import torch
+import pdb
 import sys
 import inspect
 from transformers import AutoModelForCausalLM, LlamaTokenizer
@@ -94,9 +95,12 @@ def _get_text_embedding(model, tokenizer, query, device, image):
     gen_kwargs = {"max_length": 2048, "do_sample": False}
 
     with torch.no_grad():
-        text_embedding = model.generate(**inputs, **gen_kwargs)
-
-        # breakpoint()
+        
+        
+        token_ids = model.generate(**inputs, **gen_kwargs)
+        
+        
+        
         # print("model generate code: ")
         # print(inspect.getsource(model.generate))
 
@@ -104,18 +108,31 @@ def _get_text_embedding(model, tokenizer, query, device, image):
 
         # print("text_embedding: ",text_embedding)
 
-        text_embedding = text_embedding[:, inputs['input_ids'].shape[1]:]
-
-        print("text_embedding shape: ",text_embedding)
+        token_ids = token_ids[:, inputs['input_ids'].shape[1]:]
+        
+        print(tokenizer.decode(token_ids[0][19]))
+        
+        #output = tokenizer.decode(token_ids[0])
+        
+        
+        # TODO: Obtain token_ids for all the objects in the output and embed those 
+        
+        # Do it for the different tokens 
+        text_embedding = model.model.embed_tokens(token_ids[0,19])
+        # text_embedding = model.model.embed_tokens(token_ids[0,0])
+        
+        # THIS TTEXT_EMBEDDING SHOULD THEN BE PASSED TO THE 
+        
+        # print("token_ids shape: ",token_ids)
         # print("text_embedding shape: ",text_embedding.shape)
 
-        output = tokenizer.decode(text_embedding[0])
+        # output = tokenizer.decode(token_ids[0])
+        
+        # breakpoint()
+        
+        # print(inspect.getsource(model.model.embed_tokens))
 
-        breakpoint()
-        print("text embeddings: ", output)
-
-
-
+        # print("text embeddings: ", output)
 
     # print("inputs images len:", len(inputs['images']))
     # print("inputs images shape: ", inputs['images'][0][0].shape)
@@ -151,12 +168,17 @@ torch_type = torch.bfloat16
 
 # Obtain COGVLM model from HF
 print("Loading Model")
+
+
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_PATH,
     torch_dtype=torch_type,
     low_cpu_mem_usage=True,
     trust_remote_code=True
 ).to(DEVICE).eval()
+
+print("model: ", model)
+
 
 print("entire model forward: ")
 # print(inspect.getsource(model.forward))
@@ -170,7 +192,7 @@ image = Image.open(requests.get('http://images.cocodataset.org/val2014/COCO_val2
 
 # image_tensor = preprocess_pipeline(image).unsqueeze(0).to(DEVICE)
 # text_emb, processed_image = _get_text_embedding(model, tokenizer, "a photo of a cat", DEVICE, None)
-text_emb, processed_image = _get_text_embedding(model, tokenizer, "a photo of a cat", DEVICE, image)
+text_emb, processed_image = _get_text_embedding(model, tokenizer, "What is in the image", DEVICE, image)
 
 
 processed_image = processed_image.unsqueeze(0)

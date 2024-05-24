@@ -1,6 +1,7 @@
 import math
 import types
 import torch
+import pdb
 import sys
 import inspect
 import torch.nn as nn
@@ -118,68 +119,62 @@ class LeWrapper(nn.Module):
             intermediate_feat = self.model.vision.transformer.layers[layer].feat_post_mlp
             print("intermediate_feat.shape: ", intermediate_feat.shape)
             
+            
             intermediate_feat = self.model.vision.linear_proj(intermediate_feat.mean(dim=0)) 
+            intermediate_feat = torch.sum(intermediate_feat, dim=0).unsqueeze(0)
+                        
             print("intermediate_feat.shape after linear proj: ", intermediate_feat.shape)
             
-            # print("model: ", self.model)
-            # intermediate_feat = self.model.cross_vision(intermediate_feat)
-            # print("intermediate_feat.shape after cross vision: ", intermediate_feat.shape)
-
-            sys.exit("done")
-            
-            #intermediate_feat = self.visual.ln_post(intermediate_feat.mean(dim=0)) @ self.visual.proj 
-
-            
-            
-            # FIND CORRECT PROJECTION
-            
-            # intermediate_feat = F.normalize(intermediate_feat, dim=-1)
-            # image_features_list.append(intermediate_feat)
+            image_features_list.append(intermediate_feat)
             
         
             
-        # # Normalize features
-        # num_tokens = blocks_list[-1].feat_post_mlp.shape[0] - 1
-        # w = h = int(math.sqrt(num_tokens))
+        # Normalize features
+        num_tokens = blocks_list[-1].feat_post_mlp.shape[0] - 1
+        w = h = int(math.sqrt(num_tokens))
         
-        # # SHOULD WORK FROM HERE
-        # # ----- Get explainability map
-        # accum_expl_map = 0
-        # for layer, (blk, img_feat) in enumerate(zip(blocks_list[self.starting_depth:], image_features_list)):
-        #     self.visual.zero_grad()
+        # SHOULD WORK FROM HERE
+        # ----- Get explainability map
+        accum_expl_map = 0
+        for layer, (blk, img_feat) in enumerate(zip(blocks_list[self.starting_depth:], image_features_list)):
+            self.model.vision.zero_grad()
 
-        #     # Compute similarity between text and image features
-        #     sim = text_embedding @ img_feat.transpose(-1, -2)  # [1, 1]
-        #     one_hot = F.one_hot(torch.arange(0, num_prompts)).float().requires_grad_(True).to(text_embedding.device)
-        #     one_hot = torch.sum(one_hot * sim)
-        #     attn_map = blocks_list[self.starting_depth + layer].attn.attention_map  # [b, num_heads, N, N]
-
-        #     # -------- Get explainability map --------
+            # Compute similarity between text and image features
+            sim = text_embedding @ img_feat.transpose(-1, -2)  # [1, 1]
+            one_hot = F.one_hot(torch.arange(0, num_prompts)).float().requires_grad_(True).to(text_embedding.device)
+            one_hot = torch.sum(one_hot * sim)
             
-        #     # Compute gradients
-        #     grad = torch.autograd.grad(one_hot, [attn_map], retain_graph=True, create_graph=True)[
-        #         0]  # [batch_size * num_heads, N, N]
-        #     grad = rearrange(grad, '(b h) n m -> b h n m', b=num_prompts)  # separate batch and attn heads
-        #     grad = torch.clamp(grad, min=0.)
-
-        #     # Average attention and reshape
-        #     image_relevance = grad.mean(dim=1).mean(dim=1)[:, 1:]  # average attn over [CLS] + patch tokens
             
-        #     # Interpolate and normalize
-        #     expl_map = rearrange(image_relevance, 'b (w h) -> 1 b w h', w=w, h=h)
-        #     expl_map = F.interpolate(expl_map, scale_factor=self.patch_size, mode='bilinear')  # [B, 1, H, W]
-        #     accum_expl_map += expl_map
+            attn_map = blocks_list[self.starting_depth + layer].attention.attention_map  # [b, num_heads, N, N]
 
-        # # Min-Max Norm
-        # accum_expl_map = min_max(accum_expl_map)
-        # return accum_expl_map
+            # -------- Get explainability map --------
+            
+            # Compute gradients
+            grad = torch.autograd.grad(one_hot, [attn_map], retain_graph=True, create_graph=True)[
+                0]  # [batch_size * num_heads, N, N]
+            
+            pdb.set_trace()
+            grad = grad.squeeze()
+            pdb.set_trace()
+            
+            # TODO Continue from here, the bellow line gives errors right now. In the orginal code it only adds a batch
+            # dimenison, making the shape go from [12,785,785] to [1,12,785,785]. Perhaps we can just unsqueze or remove the line
+            
+            grad = rearrange(grad, '(b h) n m -> b h n m', b=num_prompts)  # separate batch and attn heads
+            grad = torch.clamp(grad, min=0.)
+            
+            # Average attention and reshape
+            image_relevance = grad.mean(dim=1).mean(dim=1)[:, 1:]  # average attn over [CLS] + patch tokens
+            
+            # Interpolate and normalize
+            expl_map = rearrange(image_relevance, 'b (w h) -> 1 b w h', w=w, h=h)
+            expl_map = F.interpolate(expl_map, scale_factor=self.patch_size, mode='bilinear')  # [B, 1, H, W]
+            accum_expl_map += expl_map
+
+        # Min-Max Norm
+        accum_expl_map = min_max(accum_expl_map)
+        return accum_expl_map
         
-        
-    
-       
-
-
-
     # def compute_legrad_clip(self, text_embedding, image=None):
         
         
