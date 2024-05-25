@@ -182,7 +182,7 @@ class LeWrapper(nn.Module):
             print("expl_map.shape: ", expl_map.shape)
 
             breakpoint()
-            expl_map = F.interpolate(expl_map, scale_factor=16, mode='bilinear')  # [B, 1, H, W]
+            expl_map = F.interpolate(expl_map, scale_factor=1, mode='bilinear')  # [B, 1, H, W]
 
             # expl_map = F.interpolate(expl_map, scale_factor=self.patch_size, mode='bilinear')  # [B, 1, H, W]
             accum_expl_map += expl_map
