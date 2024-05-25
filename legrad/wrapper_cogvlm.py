@@ -169,7 +169,7 @@ class LeWrapper(nn.Module):
             #REshape to [b, 12, 785, 785]
             # grad = torch.unsqueeze(grad, 0)
             
-            grad = rearrange(grad.unsqueeze(dim=0), '(b h) n m -> b h n m', b=num_prompts)  # separate batch and attn heads
+            # grad = rearrange(grad.unsqueeze(dim=0), '(b h) n m -> b h n m', b=num_prompts)  # separate batch and attn heads
             grad = torch.clamp(grad, min=0.)
             
             # Average attention and reshape
