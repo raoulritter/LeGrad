@@ -4,6 +4,7 @@ import numpy as np
 from PIL import Image
 import cv2 as cv2
 import warnings
+import pdb
 
 import torch
 from torch import Tensor
@@ -503,7 +504,7 @@ def min_max(logits):
     return logits
 
 def visualize(image, heatmaps, alpha=0.6, text_prompts: List=None, save_path: Optional=None):
-    breakpoint()
+    pdb.set_trace()
     W, H = heatmaps.shape[-2:]
     if isinstance(image, Image.Image):
         image = image.resize((W, H))
