@@ -97,7 +97,6 @@ def _get_text_embedding(model, tokenizer, query, device, image):
         token_ids = model.generate(**inputs, **gen_kwargs)
         
         
-        
         # print("model generate code: ")
         # print(inspect.getsource(model.generate))
 
