@@ -524,6 +524,7 @@ def visualize(image, heatmaps, alpha=0.6, text_prompts: List=None, save_path: Op
     plt.axis('off')
     plt.tight_layout()
     plt.show()
+    plt.save('original_image.png')
 
     if heatmaps.ndim > 3:
         heatmaps = heatmaps.squeeze(0)
