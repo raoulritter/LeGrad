@@ -210,5 +210,5 @@ breakpoint()
 # #explainability_map = model.compute_legrad_vmap_clip(image=image, text_embedding=text_embedding)
 
 # # ___ (Optional): Visualize overlay of the image + heatmap ___
-# visualize_save(heatmaps=explainability_map, image=image, save_path='output.png')
+visualize_save(heatmaps=explainability_map, image=image, save_path='output.png')
 visualize(heatmaps=explainability_map, image=image, save_path='output.png')
