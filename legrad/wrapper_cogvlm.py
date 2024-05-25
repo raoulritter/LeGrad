@@ -168,6 +168,9 @@ class LeWrapper(nn.Module):
 
         # Min-Max Norm
         accum_expl_map = min_max(accum_expl_map)
+
+
+        #TODO CHECK THIS ACCUMILATION MAP? WHAT WOULD THIS LIKE VISUALIZED?
         return accum_expl_map
         
     # def compute_legrad_clip(self, text_embedding, image=None):

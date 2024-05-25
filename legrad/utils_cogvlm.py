@@ -549,6 +549,7 @@ def min_max(logits):
     return logits
 
 def visualize(image, heatmaps, alpha=0.6, text_prompts: List=None, save_path: Optional=None):
+    breakpoint()
     W, H = heatmaps.shape[-2:]
     if isinstance(image, Image.Image):
         image = image.resize((W, H))
@@ -586,6 +587,7 @@ def visualize(image, heatmaps, alpha=0.6, text_prompts: List=None, save_path: Op
         plt.show()
         if save_path is not None:
             plt.savefig(f'heatmap_{text_prompts[i]}.png')
+            print(f'heatmap_{text_prompts[i]}.png saved at {save_path}')
             # plt.savefig(f'/home/jwiers/CogVLM/LeGrad/outputs/first_image.png')
 
 
