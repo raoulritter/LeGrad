@@ -7,7 +7,7 @@ import inspect
 import pdb
 from transformers import AutoModelForCausalLM, LlamaTokenizer
 from torchvision.transforms import Resize, Compose, ToTensor, Normalize
-from legrad import LeWrapper, LePreprocess, visualize
+from legrad import LeWrapper, LePreprocess, visualize, visualize_save
 
 
 # def _get_text_embedding(model, tokenizer, query, device, image):
@@ -192,10 +192,10 @@ print("processed image shape: ", processed_image.shape)
 
 model = LeWrapper(model)
 
-breakpoint()
 explainability_map = model.compute_legrad_cogvlm(image=processed_image, text_embedding=text_emb)
 
 explainability_map = explainability_map.to(torch.float32)
+breakpoint()
 # # data_config = timm.data.resolve_model_data_config(model)
 
 
@@ -207,4 +207,5 @@ explainability_map = explainability_map.to(torch.float32)
 # #explainability_map = model.compute_legrad_vmap_clip(image=image, text_embedding=text_embedding)
 
 # # ___ (Optional): Visualize overlay of the image + heatmap ___
+visualize_save(heatmaps=explainability_map, image=image, save_path='output.png')
 visualize(heatmaps=explainability_map, image=image, save_path='output.png')

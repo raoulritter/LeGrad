@@ -550,7 +550,6 @@ def min_max(logits):
     return logits
 
 def visualize(image, heatmaps, alpha=0.6, text_prompts: List=None, save_path: Optional=None):
-    pdb.set_trace()
     W, H = heatmaps.shape[-2:]
     if isinstance(image, Image.Image):
         image = image.resize((W, H))
@@ -578,6 +577,74 @@ def visualize(image, heatmaps, alpha=0.6, text_prompts: List=None, save_path: Op
 
     img_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
     heatmaps = (heatmaps * 255).astype('uint8')
+    #VALUE HERE SHOULD BE IN THE RANGE OF 0-255 WHICH IT APPEARS TO BE
+    #save this to a file and check if the values are in the range of 0-255
+
+
+
+    heat_maps = [cv2.applyColorMap(logit, cv2.COLORMAP_JET) for logit in heatmaps]
+
+    vizs = [(1 - alpha) * img_cv + alpha * heat_map for heat_map in heat_maps]
+    for i, viz in enumerate(vizs):
+        viz = cv2.cvtColor(viz.astype('uint8'), cv2.COLOR_BGR2RGB)
+        plt.imshow(viz)
+        plt.axis('off')
+        plt.tight_layout()
+        plt.show()
+        if save_path is not None:
+            plt.savefig(f'heatmap_{text_prompts[i]}.png')
+            print(f'heatmap_{text_prompts[i]}.png saved at {save_path}')
+            # plt.savefig(f'/home/jwiers/CogVLM/LeGrad/outputs/first_image.png')
+
+
+def save_variables(image, heatmaps, text_prompts, save_path):
+    torch.save(image, save_path + 'image.pt')
+    torch.save(heatmaps, save_path + 'heatmaps.pt')
+    with open(save_path + 'text_prompts.pkl', 'wb') as f:
+        pickle.dump(text_prompts, f)
+    print(f'Variables saved at {save_path}')
+def visualize_save(image, heatmaps, alpha=0.6, text_prompts: List = None, save_path: Optional = None):
+    save_variables(image, heatmaps, text_prompts, '/content/')
+
+    pdb.set_trace()
+    W, H = heatmaps.shape[-2:]
+    if isinstance(image, Image.Image):
+        image = image.resize((W, H))
+    elif isinstance(image, torch.Tensor):
+        if image.ndim > 3:
+            image = image.squeeze(0)
+        image_unormed = (image.detach().cpu() * torch.Tensor(OPENAI_DATASET_STD)[:, None, None]) \
+                        + torch.Tensor(OPENAI_DATASET_MEAN)[:, None, None]  # undo the normalization
+        image = Image.fromarray((image_unormed.permute(1, 2, 0).numpy() * 255).astype('uint8'))  # convert to PIL
+    else:
+        raise ValueError(f'image should be either of type PIL.Image.Image or torch.Tensor but found {type(image)}')
+
+    if text_prompts is None:
+        text_prompts = [p for p in range(heatmaps.shape[0])]
+
+    # plot image
+    plt.imshow(image)
+    plt.axis('off')
+    plt.tight_layout()
+    plt.show()
+    plt.savefig('original_image.png')
+
+    if heatmaps.ndim > 3:
+        heatmaps = heatmaps.squeeze(0)
+
+    # Convert heatmaps to float32 if needed
+    if heatmaps.dtype == torch.bfloat16:
+        heatmaps = heatmaps.to(torch.float32)
+
+    heatmaps = heatmaps.detach().cpu().numpy()
+
+    img_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+    heatmaps = (heatmaps * 255).astype('uint8')
+
+    # Check and save heatmaps values
+    with open('/content/heatmaps_values.pkl', 'wb') as f:
+        pickle.dump(heatmaps, f)
+
     heat_maps = [cv2.applyColorMap(logit, cv2.COLORMAP_JET) for logit in heatmaps]
 
     vizs = [(1 - alpha) * img_cv + alpha * heat_map for heat_map in heat_maps]
