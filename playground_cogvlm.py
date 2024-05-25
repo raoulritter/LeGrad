@@ -195,7 +195,7 @@ model = LeWrapper(model)
 breakpoint()
 explainability_map = model.compute_legrad_cogvlm(image=processed_image, text_embedding=text_emb)
 
-explainability_map = explainability_map.astype('float32')
+explainability_map = explainability_map.to('float32')
 # # data_config = timm.data.resolve_model_data_config(model)
 
 
