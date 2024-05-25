@@ -201,6 +201,7 @@ print("processed image shape: ", processed_image.shape)
 
 model = LeWrapper(model)
 
+breakpoint()
 explainability_map = model.compute_legrad_cogvlm(image=processed_image, text_embedding=text_emb)
 
 # # data_config = timm.data.resolve_model_data_config(model)
