@@ -83,8 +83,7 @@ class LeWrapper(nn.Module):
             
             # TAKES ONLY THE TRANSFORMER BLOCKS (TRANSFORMER, MLP, LAYER NORM)
             current_layer = self.model.vision.transformer.layers[layer]
-            
-            # print("cogvlm transformer block attention forward", inspect.getsource(current_layer.attention.forward))
+
             
             # APPLY ATTENTION HOOK TO ATTENTION LAYER
             current_layer.attention.forward = types.MethodType(hooked_attention_forward, current_layer.attention)
@@ -119,8 +118,11 @@ class LeWrapper(nn.Module):
             # print("intermediate_feat.shape: ", intermediate_feat.shape)
             
             
-            intermediate_feat = self.model.vision.linear_proj(intermediate_feat.mean(dim=0)) 
-            intermediate_feat = torch.sum(intermediate_feat, dim=0).unsqueeze(0)
+            intermediate_feat = self.model.vision.linear_proj(intermediate_feat.mean(dim=0))
+
+            #instead of sum try mean
+            intermediate_feat = torch.mean(intermediate_feat, dim=0).unsqueeze(0)
+            # intermediate_feat = torch.sum(intermediate_feat, dim=0).unsqueeze(0)
                         
             # print("intermediate_feat.shape after linear proj: ", intermediate_feat.shape)
             

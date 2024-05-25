@@ -195,6 +195,9 @@ model = LeWrapper(model)
 explainability_map = model.compute_legrad_cogvlm(image=processed_image, text_embedding=text_emb)
 
 explainability_map = explainability_map.to(torch.float32)
+print("explainability_map shape: ", explainability_map.shape)
+
+
 breakpoint()
 # # data_config = timm.data.resolve_model_data_config(model)
 
