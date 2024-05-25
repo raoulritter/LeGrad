@@ -117,13 +117,13 @@ class LeWrapper(nn.Module):
         for layer in range(self.starting_depth, len(self.model.vision.transformer.layers)):
             
             intermediate_feat = self.model.vision.transformer.layers[layer].feat_post_mlp
-            print("intermediate_feat.shape: ", intermediate_feat.shape)
+            # print("intermediate_feat.shape: ", intermediate_feat.shape)
             
             
             intermediate_feat = self.model.vision.linear_proj(intermediate_feat.mean(dim=0)) 
             intermediate_feat = torch.sum(intermediate_feat, dim=0).unsqueeze(0)
                         
-            print("intermediate_feat.shape after linear proj: ", intermediate_feat.shape)
+            # print("intermediate_feat.shape after linear proj: ", intermediate_feat.shape)
             
             image_features_list.append(intermediate_feat)
             
@@ -153,35 +153,15 @@ class LeWrapper(nn.Module):
             grad = torch.autograd.grad(one_hot, [attn_map], retain_graph=True, create_graph=True)[
                 0]  # [batch_size * num_heads, N, N]
 
-
-            # grad = grad.squeeze() # test without this squeeze
-            # pdb.set_trace()
-
-
-           # grad.unsqueeze
-
-
-            
-            # TODO Continue from here, the bellow line gives errors right now. In the orginal code it only adds a batch
-            # dimenison, making the shape go from [12,785,785] to [1,12,785,785]. Perhaps we can just unsqueze or remove the line
-
-            #REshape to [b, 12, 785, 785]
-            # grad = torch.unsqueeze(grad, 0)
-            
-            # grad = rearrange(grad.unsqueeze(dim=0), '(b h) n m -> b h n m', b=num_prompts)  # separate batch and attn heads
             grad = torch.clamp(grad, min=0.)
             
             # Average attention and reshape
             image_relevance = grad.mean(dim=1).mean(dim=1)[:, 1:]  # average attn over [CLS] + patch tokens
 
-            # Interpolate and normalize
-            #w = 35
-            #h = 35
             expl_map = rearrange(image_relevance, 'b (w h) -> 1 b w h', w=35, h=35)
 
             print("expl_map.shape: ", expl_map.shape)
 
-            breakpoint()
             expl_map = F.interpolate(expl_map, scale_factor=1, mode='bilinear')  # [B, 1, H, W]
 
             # expl_map = F.interpolate(expl_map, scale_factor=self.patch_size, mode='bilinear')  # [B, 1, H, W]

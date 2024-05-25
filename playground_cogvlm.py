@@ -97,22 +97,21 @@ def _get_text_embedding(model, tokenizer, query, device, image):
         token_ids = model.generate(**inputs, **gen_kwargs)
         
         
-        # print("model generate code: ")
-        # print(inspect.getsource(model.generate))
-
-        # print(inspect.getsource(model.build_conversation_input_ids))
-
-        # print("text_embedding: ",text_embedding)
 
         token_ids = token_ids[:, inputs['input_ids'].shape[1]:]
-        
+
+
         print(tokenizer.decode(token_ids[0][19]))
+
+
+        breakpoint()
         
         #output = tokenizer.decode(token_ids[0])
         
         
         # TODO: Obtain token_ids for all the objects in the output and embed those 
-        
+
+        # token_id_list =
         # Do it for the different tokens 
         text_embedding = model.model.embed_tokens(token_ids[0,19])
         # text_embedding = model.model.embed_tokens(token_ids[0,0])
@@ -215,4 +214,4 @@ explainability_map = model.compute_legrad_cogvlm(image=processed_image, text_emb
 # #explainability_map = model.compute_legrad_vmap_clip(image=image, text_embedding=text_embedding)
 
 # # ___ (Optional): Visualize overlay of the image + heatmap ___
-# visualize(heatmaps=explainability_map, image=image, save_path='/home/jwiers/VLM-Grounding/LeGrad/outputs/first_image.png')
+visualize(heatmaps=explainability_map, image=image, save_path='output.png')
