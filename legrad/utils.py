@@ -504,7 +504,7 @@ def min_max(logits):
     return logits
 
 def visualize(image, heatmaps, alpha=0.6, text_prompts: List=None, save_path: Optional=None):
-    pdb.set_trace()
+    # pdb.set_trace()
     W, H = heatmaps.shape[-2:]
     if isinstance(image, Image.Image):
         image = image.resize((W, H))
@@ -551,10 +551,11 @@ def save_variables(image, heatmaps, text_prompts, save_path):
     with open(save_path + 'text_prompts.pkl', 'wb') as f:
         pickle.dump(text_prompts, f)
     print(f'Variables saved at {save_path}')
-def visualize_save(image, heatmaps, alpha=0.6, text_prompts: List = None, save_path: Optional = None):
-    save_variables(image, heatmaps, text_prompts, '/content/')
 
-    pdb.set_trace()
+def visualize_save(image, heatmaps, alpha=0.6, text_prompts: List = None, save_path: Optional = None):
+    # save_variables(image, heatmaps, text_prompts, '/content/')
+
+    # pdb.set_trace()
     W, H = heatmaps.shape[-2:]
     if isinstance(image, Image.Image):
         image = image.resize((W, H))
@@ -588,10 +589,6 @@ def visualize_save(image, heatmaps, alpha=0.6, text_prompts: List = None, save_p
 
     img_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
     heatmaps = (heatmaps * 255).astype('uint8')
-
-    # Check and save heatmaps values
-    with open('/content/heatmaps_values.pkl', 'wb') as f:
-        pickle.dump(heatmaps, f)
 
     heat_maps = [cv2.applyColorMap(logit, cv2.COLORMAP_JET) for logit in heatmaps]
 

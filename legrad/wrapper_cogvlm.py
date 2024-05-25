@@ -84,6 +84,7 @@ class LeWrapper(nn.Module):
             # TAKES ONLY THE TRANSFORMER BLOCKS (TRANSFORMER, MLP, LAYER NORM)
             current_layer = self.model.vision.transformer.layers[layer]
 
+            # print("cogvlm transformer block attention forward", inspect.getsource(current_layer.attention.forward))
             
             # APPLY ATTENTION HOOK TO ATTENTION LAYER
             current_layer.attention.forward = types.MethodType(hooked_attention_forward, current_layer.attention)
