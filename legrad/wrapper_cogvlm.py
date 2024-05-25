@@ -154,9 +154,8 @@ class LeWrapper(nn.Module):
                 0]  # [batch_size * num_heads, N, N]
 
 
-            pdb.set_trace()
             # grad = grad.squeeze() # test without this squeeze
-            pdb.set_trace()
+            # pdb.set_trace()
 
 
            # grad.unsqueeze
@@ -174,10 +173,18 @@ class LeWrapper(nn.Module):
             
             # Average attention and reshape
             image_relevance = grad.mean(dim=1).mean(dim=1)[:, 1:]  # average attn over [CLS] + patch tokens
-            
+
             # Interpolate and normalize
-            expl_map = rearrange(image_relevance, 'b (w h) -> 1 b w h', w=w, h=h)
-            expl_map = F.interpolate(expl_map, scale_factor=self.patch_size, mode='bilinear')  # [B, 1, H, W]
+            #w = 35
+            #h = 35
+            expl_map = rearrange(image_relevance, 'b (w h) -> 1 b w h', w=35, h=35)
+
+            print("expl_map.shape: ", expl_map.shape)
+
+            breakpoint()
+            expl_map = F.interpolate(expl_map, scale_factor=16, mode='bilinear')  # [B, 1, H, W]
+
+            # expl_map = F.interpolate(expl_map, scale_factor=self.patch_size, mode='bilinear')  # [B, 1, H, W]
             accum_expl_map += expl_map
 
         # Min-Max Norm
