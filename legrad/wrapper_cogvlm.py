@@ -156,11 +156,16 @@ class LeWrapper(nn.Module):
             pdb.set_trace()
             grad = grad.squeeze()
             pdb.set_trace()
+
+
+            num_heads = grad.shape[0] // num_prompts
+
+
             
             # TODO Continue from here, the bellow line gives errors right now. In the orginal code it only adds a batch
             # dimenison, making the shape go from [12,785,785] to [1,12,785,785]. Perhaps we can just unsqueze or remove the line
             
-            grad = rearrange(grad, '(b h) n m -> b h n m', b=num_prompts)  # separate batch and attn heads
+            grad = rearrange(grad, '(b h) n m -> b h n m', b=num_prompts, h=num_heads)  # separate batch and attn heads
             grad = torch.clamp(grad, min=0.)
             
             # Average attention and reshape
