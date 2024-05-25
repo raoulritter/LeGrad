@@ -103,9 +103,6 @@ def _get_text_embedding(model, tokenizer, query, device, image):
 
         print(tokenizer.decode(token_ids[0][19]))
 
-
-        breakpoint()
-        
         #output = tokenizer.decode(token_ids[0])
         
         
@@ -172,12 +169,6 @@ model = AutoModelForCausalLM.from_pretrained(
     trust_remote_code=True
 ).to(DEVICE).eval()
 
-print("model: ", model)
-
-
-print("entire model forward: ")
-# print(inspect.getsource(model.forward))
-
 tokenizer = LlamaTokenizer.from_pretrained("lmsys/vicuna-7b-v1.5")
 
 # PROCESS IMAGE
@@ -204,6 +195,7 @@ model = LeWrapper(model)
 breakpoint()
 explainability_map = model.compute_legrad_cogvlm(image=processed_image, text_embedding=text_emb)
 
+explainability_map = explainability_map.astype('float32')
 # # data_config = timm.data.resolve_model_data_config(model)
 
 
