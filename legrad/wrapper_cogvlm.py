@@ -152,20 +152,24 @@ class LeWrapper(nn.Module):
             # Compute gradients
             grad = torch.autograd.grad(one_hot, [attn_map], retain_graph=True, create_graph=True)[
                 0]  # [batch_size * num_heads, N, N]
-            
+
+
             pdb.set_trace()
-            grad = grad.squeeze()
+            # grad = grad.squeeze() # test without this squeeze
             pdb.set_trace()
 
 
-            num_heads = grad.shape[0] // num_prompts
+           # grad.unsqueeze
 
 
             
             # TODO Continue from here, the bellow line gives errors right now. In the orginal code it only adds a batch
             # dimenison, making the shape go from [12,785,785] to [1,12,785,785]. Perhaps we can just unsqueze or remove the line
+
+            #REshape to [b, 12, 785, 785]
+            # grad = torch.unsqueeze(grad, 0)
             
-            grad = rearrange(grad, '(b h) n m -> b h n m', b=num_prompts, h=num_heads)  # separate batch and attn heads
+            grad = rearrange(grad.unsqueeze(dim=0), '(b h) n m -> b h n m', b=num_prompts)  # separate batch and attn heads
             grad = torch.clamp(grad, min=0.)
             
             # Average attention and reshape
