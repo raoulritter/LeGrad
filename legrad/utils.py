@@ -553,7 +553,7 @@ def save_variables(image, heatmaps, text_prompts, save_path):
     print(f'Variables saved at {save_path}')
 
 def visualize_save(image, heatmaps, alpha=0.6, text_prompts: List = None, save_path: Optional = None):
-    save_variables(image, heatmaps, text_prompts, '/content/')
+    # save_variables(image, heatmaps, text_prompts, ')
 
     # pdb.set_trace()
     W, H = heatmaps.shape[-2:]
