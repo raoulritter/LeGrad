@@ -523,7 +523,7 @@ def visualize(image, heatmaps, alpha=0.6, text_prompts: List=None, save_path: Op
     plt.imshow(image)
     plt.axis('off')
     plt.tight_layout()
-    plt.show()
+    # plt.show()
     plt.savefig('original_image.png')
 
     if heatmaps.ndim > 3:
@@ -540,8 +540,10 @@ def visualize(image, heatmaps, alpha=0.6, text_prompts: List=None, save_path: Op
         plt.imshow(viz)
         plt.axis('off')
         plt.tight_layout()
-        plt.show()
+        # plt.show()
         if save_path is not None:
+            print("saving heatmap")
+            plt.savefig(save_path)
             plt.savefig(f'heatmap_{text_prompts[i]}.png')
 
 

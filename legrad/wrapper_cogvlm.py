@@ -2,6 +2,7 @@ import math
 import types
 import torch
 import sys
+import gc
 import inspect
 import torch.nn as nn
 import torch.nn.functional as F
@@ -21,6 +22,12 @@ from .utils_cogvlm import hooked_resblock_forward, \
     hooked_torch_multi_head_attention_forward
 
 
+def print_vram_usage():
+    allocated = torch.cuda.memory_allocated() / 1024 ** 3  # Convert bytes to GB
+    reserved = torch.cuda.memory_reserved() / 1024 ** 3    # Convert bytes to GB
+    print(f"VRAM Usage - Allocated: {allocated:.2f} GB, Reserved: {reserved:.2f} GB")
+    
+    
 class LeWrapper(nn.Module):
     """
     Wrapper around OpenCLIP to add LeGrad to OpenCLIP's model while keeping all the functionalities of the original model.
@@ -46,23 +53,10 @@ class LeWrapper(nn.Module):
             
             # Store the original forward method for comparison
             original_forward = self.model.vision.forward
-         
-            # REMOVED DYNAMIC FORWARD
-         
-            # Set the custom dynamic size forward function 
-            #self.model.vision.forward = types.MethodType(vit_dynamic_size_forward, self.model.vision)
-            #self.visual.forward = types.MethodType(vit_dynamic_size_forward, self.visual)
-            
-            print("original forward: ")
-            print(inspect.getsource(original_forward))
-            # print(inspect.getsource(self.model.vision.forward ))
-        
+                
         total_layers = len(self.model.vision.transformer.layers)
         self.starting_depth = layer_index if layer_index >= 0 else total_layers + layer_index
         
-        print("self.starting_depth: ", self.starting_depth)
-        print('Hooks and gradients activated!')
-
         self._activate_self_attention_hooks()
 
 
@@ -70,30 +64,22 @@ class LeWrapper(nn.Module):
         
         # Set gradients to TRUE for last X layers
         for name, param in self.model.vision.transformer.named_parameters():
-            # print("paramater name", name)
             param.requires_grad = False
             if 'layers' in name:
                 # get the depth from the parameter name
                 depth = int(name.split('layers.')[1].split('.')[0])
                 if depth >= self.starting_depth:
                     param.requires_grad = True
-                    #print("changed param")
                     
         # Activate hooks
         for layer in range(self.starting_depth, len(self.model.vision.transformer.layers)):
             
             # TAKES ONLY THE TRANSFORMER BLOCKS (TRANSFORMER, MLP, LAYER NORM)
             current_layer = self.model.vision.transformer.layers[layer]
-
-            # print("cogvlm transformer block attention forward", inspect.getsource(current_layer.attention.forward))
             
             # APPLY ATTENTION HOOK TO ATTENTION LAYER
             current_layer.attention.forward = types.MethodType(hooked_attention_forward, current_layer.attention)
-            
-            # APPLY FORWARD HOOK TO ENTIRE TRANSFORMER BLOCK
-            # print("cogvlm transformer block forward", inspect.getsource(current_layer.forward))
-            
-            
+                   
             current_layer.forward = types.MethodType(hooked_resblock_forward, current_layer)
                         
     def compute_legrad(self, text_embedding, image=None, apply_correction=True):
@@ -101,44 +87,45 @@ class LeWrapper(nn.Module):
 
     def compute_legrad_cogvlm(self, text_embedding, image=None):
         
-        print("shape text embedding: ", text_embedding.shape)
-        print(image.shape)
         num_prompts = text_embedding.shape[0]
         
-        
         if image is not None:
-            _ = self.model.vision(image)
-                        
-                        
+            
+            # pdb.set_trace()
+                
+            # print("summary before forward")
+            # print(torch.cuda.memory_summary())
+                
+            with torch.autograd.profiler.profile(use_cuda=True, record_shapes=True, profile_memory=True) as prof:
+                _ = self.model.vision(image)
+                
+            # print(prof.key_averages().table(sort_by="cuda_memory_usage", row_limit=10))
+                
+            # print("summary after forward")
+            # print(torch.cuda.memory_summary())     
+              
         blocks_list = list(dict(self.model.vision.transformer.layers.named_children()).values())
         
-
         image_features_list = []
     
         # Collect images features (activations) for specified layers/blocks and postprocess them
         for layer in range(self.starting_depth, len(self.model.vision.transformer.layers)):
             
             intermediate_feat = self.model.vision.transformer.layers[layer].feat_post_mlp
-            # print("intermediate_feat.shape: ", intermediate_feat.shape)
-            
             
             intermediate_feat = self.model.vision.linear_proj(intermediate_feat.mean(dim=0))
 
             #instead of sum try mean
             intermediate_feat = torch.mean(intermediate_feat, dim=0).unsqueeze(0)
-            # intermediate_feat = torch.sum(intermediate_feat, dim=0).unsqueeze(0)
                         
-            # print("intermediate_feat.shape after linear proj: ", intermediate_feat.shape)
-            
             image_features_list.append(intermediate_feat)
             
-        
+            
             
         # GET the number of tokens which is the size 
         num_tokens = blocks_list[-1].feat_post_mlp.shape[1] 
         w = h = int(math.sqrt(num_tokens))
         
-        # SHOULD WORK FROM HERE
         # ----- Get explainability map
         accum_expl_map = 0
         for layer, (blk, img_feat) in enumerate(zip(blocks_list[self.starting_depth:], image_features_list)):
@@ -151,34 +138,16 @@ class LeWrapper(nn.Module):
             
             
             attn_map = blocks_list[self.starting_depth + layer].attention.attention_map  # [b, num_heads, N, N]
-            #Drop the first value so we match [num_heads, N, N]
-                    
-                    
-                    #WHEN I RESHAPE I GET:
-                    
-                    
             
-            #             --Return--
-            # > /gpfs/home6/rritter/VLM-Grounding/legrad/legrad/wrapper_cogvlm.py(172)compute_legrad_cogvlm()->None
-            # -> grad = torch.autograd.grad(one_hot, [attn_map], retain_graph=True, create_graph=True)[
-            # (Pdb) n
-            # RuntimeError: One of the differentiated Tensors appears to not have been used in the graph. Set allow_unused=True if this is the desired behavior.
-                        
+            # Deleting paramater after
+            del blocks_list[self.starting_depth + layer].attention.attention_map
             
-            ####    
-            # attn_map = attn_map.reshape(attn_map.shape[1:])
-            
-            # LIKE THIS OR WE CAN DO
-            #attn_map = rearrange(attn_map, '1 h n1 n2 -> h n1 n2')
-
-            
-            # SHOULDN"T BE SQUEEZE BUT REARRANGE THIS SHAPE
-
-
             # -------- Get explainability map --------
             
             # Compute gradients
-            grad = torch.autograd.grad(one_hot, [attn_map], retain_graph=True, create_graph=True)[
+            # grad = torch.autograd.grad(one_hot, [attn_map], retain_graph=True, create_graph=True)[
+            #     0]  # [batch_size * num_heads, N, N]
+            grad = torch.autograd.grad(one_hot, [attn_map], retain_graph=False, create_graph=False)[
                 0]  # [batch_size * num_heads, N, N]
 
             grad = torch.clamp(grad, min=0.)
@@ -187,78 +156,31 @@ class LeWrapper(nn.Module):
             image_relevance = grad.mean(dim=1).mean(dim=1)[:, 1:]  # average attn over [CLS] + patch tokens
 
             expl_map = rearrange(image_relevance, 'b (w h) -> 1 b w h', w=w, h=h)
-
-            print("expl_map.shape: ", expl_map.shape)
-            
-            # pdb.set_trace()
-
             expl_map = F.interpolate(expl_map, scale_factor=14, mode='bilinear')  # [B, 1, H, W]
 
-            # expl_map = F.interpolate(expl_map, scale_factor=self.patch_size, mode='bilinear')  # [B, 1, H, W]
             accum_expl_map += expl_map
 
         # Min-Max Norm
         accum_expl_map = min_max(accum_expl_map)
-
+        
+        print("clearing gradients")
+        for param in self.model.parameters():
+            if param.grad is not None:
+                param.grad = None
+                
+        for layer in range(self.starting_depth, len(self.model.vision.transformer.layers)):
+            # Deleting paramater after
+            del self.model.vision.transformer.layers[layer].feat_post_mlp
+            
+        # Synchronize and clear CUDA cache
+        torch.cuda.synchronize()
+        torch.cuda.empty_cache()
+            
+        # Force garbage collection
+        gc.collect()
 
         return accum_expl_map
         
-    # def compute_legrad_clip(self, text_embedding, image=None):
-        
-        
-    #     num_prompts = text_embedding.shape[0]
-        
-    #     # Put the image through the encoder
-    #     if image is not None:
-    #         # image = image.repeat(num_prompts, 1, 1, 1)
-    #         _ = self.encode_image(image)
-
-    #     # Obtain all blocks
-    #     blocks_list = list(dict(self.visual.transformer.resblocks.named_children()).values())
-    #     image_features_list = []
-
-    #     # Collect images features (activations) for specified layers/blocks and postprocess them
-    #     for layer in range(self.starting_depth, len(self.visual.transformer.resblocks)):
-    #         intermediate_feat = self.visual.transformer.resblocks[layer].feat_post_mlp  
-    #         intermediate_feat = self.visual.ln_post(intermediate_feat.mean(dim=0)) @ self.visual.proj
-    #         intermediate_feat = F.normalize(intermediate_feat, dim=-1)
-    #         image_features_list.append(intermediate_feat)
-
-    #     # Normalize features
-    #     num_tokens = blocks_list[-1].feat_post_mlp.shape[0] - 1
-    #     w = h = int(math.sqrt(num_tokens))
-        
-    #     # ----- Get explainability map
-    #     accum_expl_map = 0
-    #     for layer, (blk, img_feat) in enumerate(zip(blocks_list[self.starting_depth:], image_features_list)):
-    #         self.visual.zero_grad()
-
-    #         # Compute similarity between text and image features
-    #         sim = text_embedding @ img_feat.transpose(-1, -2)  # [1, 1]
-    #         one_hot = F.one_hot(torch.arange(0, num_prompts)).float().requires_grad_(True).to(text_embedding.device)
-    #         one_hot = torch.sum(one_hot * sim)
-    #         attn_map = blocks_list[self.starting_depth + layer].attn.attention_map  # [b, num_heads, N, N]
-
-    #         # -------- Get explainability map --------
-            
-    #         # Compute gradients
-    #         grad = torch.autograd.grad(one_hot, [attn_map], retain_graph=True, create_graph=True)[
-    #             0]  # [batch_size * num_heads, N, N]
-    #         grad = rearrange(grad, '(b h) n m -> b h n m', b=num_prompts)  # separate batch and attn heads
-    #         grad = torch.clamp(grad, min=0.)
-
-    #         # Average attention and reshape
-    #         image_relevance = grad.mean(dim=1).mean(dim=1)[:, 1:]  # average attn over [CLS] + patch tokens
-            
-    #         # Interpolate and normalize
-    #         expl_map = rearrange(image_relevance, 'b (w h) -> 1 b w h', w=w, h=h)
-    #         expl_map = F.interpolate(expl_map, scale_factor=self.patch_size, mode='bilinear')  # [B, 1, H, W]
-    #         accum_expl_map += expl_map
-
-    #     # Min-Max Norm
-    #     accum_expl_map = min_max(accum_expl_map)
-    #     return accum_expl_map
-
 class LePreprocess(nn.Module):
     """
     Modify OpenCLIP preprocessing to accept arbitrary image size.

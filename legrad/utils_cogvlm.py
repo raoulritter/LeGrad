@@ -62,10 +62,10 @@ def hooked_attention_forward(self, x: "tensor(B, L, D)") -> "tensor(B, L, D)":
     out_xops = xops.memory_efficient_attention(
         q, k, v, scale=self.scale,
     )
-    print(f"testing if local version works", attn_weights.shape)
+    #print(f"testing if local version works", attn_weights.shape)
     #print shapes of out and attn_weights
-    print(f"out shape: {out.shape}")
-    print(f"out_xops shape: {out_xops.shape}")
+    #print(f"out shape: {out.shape}")
+    #print(f"out_xops shape: {out_xops.shape}")
     output = self.dense(out.reshape(B, L, -1))
     output = self.output_dropout(output)
 
@@ -477,9 +477,9 @@ def hooked_attentional_pooler_timm_forward(self, x):
 def vit_dynamic_size_forward(self, x: torch.Tensor):
     # self -> self.model.vision
     
-    print("self: ",self)
+    #print("self: ",self)
     x = self.patch_embedding.proj(x)  # shape = [*, width, grid, grid]
-    print("Conv2d working")
+    #print("Conv2d working")
     
     grid_h, grid_w = x.shape[2:]
     x = x.reshape(x.shape[0], x.shape[1], -1)  # shape = [*, width, grid ** 2]
