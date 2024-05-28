@@ -7,3 +7,6 @@ matplotlib
 numpy
 requests
 einops
+spacy
+transformers
+xformers

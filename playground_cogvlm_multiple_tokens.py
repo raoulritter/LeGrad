@@ -7,11 +7,10 @@ import spacy
 import gc
 import inspect
 import pdb
+import os
 from transformers import AutoModelForCausalLM, LlamaTokenizer
 from torchvision.transforms import Resize, Compose, ToTensor, Normalize
 from legrad import LeWrapper, LePreprocess, visualize, visualize_save
-
-nlp = spacy.load('en_core_web_sm')
 
 
 def is_object(word):
@@ -55,6 +54,7 @@ def _get_text_embedding(model, tokenizer, query, device, image):
         
         
         text_embeddings = []
+        
         # for i in range(token_ids.shape[1]):
         #     token_id = token_ids[0, i].unsqueeze(0).to(device)
         #     text_embedding = model.model.embed_tokens(token_id)
@@ -87,20 +87,36 @@ def _get_text_embedding(model, tokenizer, query, device, image):
         non_object_nouns = {"image", "picture", "photo"}
         objects = [chunk.root.text for chunk in doc.noun_chunks if chunk.root.pos_ == 'NOUN' and chunk.root.text.lower() not in non_object_nouns]
         print(objects)  # Output: ['dog', 'woman']
-        pdb.set_trace()
+        
+        # for i in range(objects):
+        #     token_id = token_ids[0, i].unsqueeze(0).to(device)
+        #     text_embedding = model.model.embed_tokens(token_id)
+        #     text_embeddings.append((text_embedding, objects[i]))
         
         
+        for obj in objects:
+            # pdb.set_trace()
+            obj = obj.replace("'", "")
+            # print(obj)
+            # len(obj)
+            obj_token_ids = tokenizer.encode(obj, return_tensors='pt').to(device)
+            obj_embedding = model.model.embed_tokens(obj_token_ids)
+            text_embeddings.append((obj_embedding, obj))
+                    
         
-        # TODO (1): From objects back to tokens 
-        # TODO (2): From tokens back to embeddings 
-        # TODO (3): Possibly aggegrate embeddings 
+        
+        # pdb.set_trace()
+        
+        # TODO (1): From objects back to tokens  - Think this is done
+        # TODO (2): From tokens back to embeddings - Think this is done.
+        # TODO (3): Possibly aggegrate embeddings - What ae 
          
         
         
         
         
         
-        objects = ['dog', 'toilet']
+        # objects = ['dog', 'toilet']
         
                 
         print("objects are: ", *[t[1] for t in text_embeddings])
@@ -136,12 +152,13 @@ model = AutoModelForCausalLM.from_pretrained(
 tokenizer = LlamaTokenizer.from_pretrained("lmsys/vicuna-7b-v1.5")
 
 # PROCESS IMAGE
-url = 'http://images.cocodataset.org/val2014/COCO_val2014_000000000042.jpg'
+# url = 'http://images.cocodataset.org/val2014/COCO_val2014_000000000042.jpg'
+url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+file_name = os.path.splitext(os.path.basename(url))[0]
+
 
 image = Image.open(
     requests.get(url, stream=True).raw).convert('RGB')
-
-# image = Image.open("/home/jwiers/POPE/data/val2014/COCO_val2014_000000061471.jpg")
 
 text_embs, processed_image = _get_text_embedding(model, tokenizer, "What is in the image?", DEVICE, image)
 
@@ -152,6 +169,7 @@ processed_image = processed_image.unsqueeze(0)
 
 
 del model 
+torch.cuda.empty_cache()
 
 #model = LeWrapper(model)
 
@@ -173,11 +191,13 @@ for text_emb, token_str in text_embs:
     
     explainability_map = model.compute_legrad_cogvlm(image=processed_image, text_embedding=text_emb)
     explainability_map = explainability_map.to(torch.float32)
+    torch.save(explainability_map, f'explainability_map_{file_name}_{token_str}.pt')
+
     
     
     # print(f"Explainability map shape for token '{token_str}': ", explainability_map.shape)
     
-    visualize(heatmaps=explainability_map, image=image, save_path=f'heatmap_{token_str}.png')
+    visualize(heatmaps=explainability_map, image=image, save_path=f'heatmap_{file_name}_{token_str}.png')
     
     # pdb.set_trace()
     model.zero_grad()
@@ -198,6 +218,7 @@ for text_emb, token_str in text_embs:
     print_vram_usage()
     # pdb.set_trace()
     del model
+    
     
     
     
