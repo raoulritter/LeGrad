@@ -95,12 +95,7 @@ def _get_text_embedding(model, tokenizer, query, device, image):
         
         
         token_ids = model.generate(**inputs, **gen_kwargs)
-        
-        
-
         token_ids = token_ids[:, inputs['input_ids'].shape[1]:]
-
-
         print(tokenizer.decode(token_ids[0][19]))
 
         #output = tokenizer.decode(token_ids[0])
@@ -193,6 +188,8 @@ print("processed image shape: ", processed_image.shape)
 model = LeWrapper(model)
 
 explainability_map = model.compute_legrad_cogvlm(image=processed_image, text_embedding=text_emb)
+
+
 
 explainability_map = explainability_map.to(torch.float32)
 print("explainability_map shape: ", explainability_map.shape)

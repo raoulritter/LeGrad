@@ -505,6 +505,9 @@ def min_max(logits):
 
 def visualize(image, heatmaps, alpha=0.6, text_prompts: List=None, save_path: Optional=None):
     # pdb.set_trace()
+    
+    print("save_path: ", save_path)
+    
     W, H = heatmaps.shape[-2:]
     if isinstance(image, Image.Image):
         image = image.resize((W, H))
@@ -544,7 +547,7 @@ def visualize(image, heatmaps, alpha=0.6, text_prompts: List=None, save_path: Op
         if save_path is not None:
             print("saving heatmap")
             plt.savefig(save_path)
-            plt.savefig(f'heatmap_{text_prompts[i]}.png')
+            #plt.savefig(f'heatmap_{text_prompts[i]}.png')
 
 
 def save_variables(image, heatmaps, text_prompts, save_path):
@@ -556,6 +559,8 @@ def save_variables(image, heatmaps, text_prompts, save_path):
 
 def visualize_save(image, heatmaps, alpha=0.6, text_prompts: List = None, save_path: Optional = None):
     # save_variables(image, heatmaps, text_prompts, ')
+
+    print("save_path: ", save_path)
 
     # pdb.set_trace()
     W, H = heatmaps.shape[-2:]
@@ -577,7 +582,7 @@ def visualize_save(image, heatmaps, alpha=0.6, text_prompts: List = None, save_p
     plt.imshow(image)
     plt.axis('off')
     plt.tight_layout()
-    plt.show()
+    # plt.show()
     plt.savefig('original_image.png')
 
     if heatmaps.ndim > 3:
@@ -604,7 +609,7 @@ def visualize_save(image, heatmaps, alpha=0.6, text_prompts: List = None, save_p
         if save_path is not None:
             plt.savefig(f'heatmap_{text_prompts[i]}.png')
             print(f'heatmap_{text_prompts[i]}.png saved at {save_path}')
-            # plt.savefig(f'/home/jwiers/CogVLM/LeGrad/outputs/first_image.png')
+            #plt.savefig(f'/home/jwiers/CogVLM/LeGrad/outputs/first_image.png')
 
 
 def list_pretrained():

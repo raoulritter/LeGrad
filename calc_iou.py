@@ -90,7 +90,6 @@ instances = 0
 
 
 
-
             # if max_iou < 0.5:
             #     # If IoU is less than 0.5, classify as a hallucination
             #     if matched_gt_label == pred_label:
